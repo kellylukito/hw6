@@ -96,4 +96,34 @@ bool boggleHelper(const std::set<std::string>& dict, const std::set<std::string>
 {
 //add your solution here!
 
+//check bounds
+if(r >= board.size() || c >= board.size()){
+  return false;
+}
+
+word += board[r][c];
+
+//base case
+if(prefix.find(word) == prefix.end()){
+  //not prefix but still valid word -> longest word
+  if(dict.find(word) != dict.end()){
+    result.insert(word);
+    return true;
+  }
+  //stop search if word is not prefix
+  return false;
+}
+
+//recurse for longer words
+if(boggleHelper(dict, prefix, board, word, result, r+dr, c+dc, dr, dc)){
+  return true;
+}
+
+//add valid words to result
+if(dict.find(word)!=dict.end()){
+  result.insert(word);
+  return true;
+}
+return false;
+
 }
