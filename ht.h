@@ -27,7 +27,7 @@ struct Prober {
     }
 };
 
-//almost complete - fill in the if statement below.
+// Almost Complete - Fill in the if statement below.
 template <typename KeyType>
 struct LinearProber : public Prober<KeyType> {
 
@@ -102,12 +102,12 @@ public:
     // To be completed
     HASH_INDEX_T next() 
     {
-      if(this->numProbes_ >= this->m_){
-        return this->npos;
-      }
-      HASH_INDEX_T loc = (this->start_ + this->numProbes_ * dhstep_) % this->m_;
-      this->numProbes_++;
-      return loc;
+        if(this->numProbes_ >= this->m_) {
+            return this->npos; 
+        }
+        HASH_INDEX_T loc = (this->start_ + this->numProbes_ * dhstep_) % this->m_;
+        this->numProbes_++;
+        return loc;
     }
 };
 
@@ -222,7 +222,7 @@ public:
     ValueType& at(const KeyType& key);
     const ValueType& operator[](const KeyType& key) const;
     ValueType& operator[](const KeyType& key);
-
+    
     // Debug / Performance functions
     void reportAll(std::ostream& out) const;
     void clearTotalProbes() { totalProbes_ = 0; }
@@ -277,7 +277,6 @@ private:
     size_t numItems_;
     size_t numDeleted_;
     size_t size_;
-
 };
 
 // ----------------------------------------------------------------------------
@@ -290,16 +289,15 @@ const HASH_INDEX_T HashTable<K,V,Prober,Hash,KEqual>::CAPACITIES[] =
     {
         11, 23, 47, 97, 197, 397, 797, 1597, 3203, 6421, 12853, 25717, 51437, 102877,
         205759, 411527, 823117, 1646237, 3292489, 6584983, 13169977, 26339969, 52679969,
-        105359969, 210719881, 421439783, 842879579, 1685759167
+        105359969, 210719881, 421439783, 842879579, 1685759117
     };
 
 // To be completed
 template<typename K, typename V, typename Prober, typename Hash, typename KEqual>
 HashTable<K,V,Prober,Hash,KEqual>::HashTable(
     double resizeAlpha, const Prober& prober, const Hasher& hash, const KEqual& kequal)
-       :  hash_(hash), kequal_(kequal), prober_(prober)
+       :  hash_(hash), kequal_(kequal), prober_(prober), totalProbes_(0), mIndex_(0), resizeAlpha_(resizeAlpha), numItems_(0), numDeleted_(0), size_(CAPACITIES[0])
 {
-    // Initialize any other data members as necessary
     table_.resize(size_, nullptr);
 }
 
@@ -307,64 +305,58 @@ HashTable<K,V,Prober,Hash,KEqual>::HashTable(
 template<typename K, typename V, typename Prober, typename Hash, typename KEqual>
 HashTable<K,V,Prober,Hash,KEqual>::~HashTable()
 {
-  for(HASH_INDEX_T i=0; i<size_; i++){
-    if(table_[i] != nullptr){
-      delete table_[i];
+    for(HASH_INDEX_T i = 0; i < size_; i++) {
+        if(table_[i] != nullptr) {
+            delete table_[i];
+        }
     }
-  }
 }
 
 // To be completed
 template<typename K, typename V, typename Prober, typename Hash, typename KEqual>
 bool HashTable<K,V,Prober,Hash,KEqual>::empty() const
 {
-  return numItems_ == 0;
+    return numItems_ == 0;
 }
 
 // To be completed
 template<typename K, typename V, typename Prober, typename Hash, typename KEqual>
 size_t HashTable<K,V,Prober,Hash,KEqual>::size() const
 {
-  return numItems_;
-
+    return numItems_;
 }
 
 // To be completed
 template<typename K, typename V, typename Prober, typename Hash, typename KEqual>
 void HashTable<K,V,Prober,Hash,KEqual>::insert(const ItemType& p)
 {
-  //resize is load factor > alpha
-  if((numItems_+numDeleted_)/static_cast<double>(size_)>=resizeAlpha_){
-    this->resize();
-  }
-  HASH_INDEX_T loc = this->probe(p.first);
-  if(loc == npos){
-    throw std::logic_error("No location available to insert item");
-  }
-  if(table_[loc]==nullptr){
-    table_[loc] = new HashItem(p);
-    numItems_++;
-  }
-  else{
-    table_[loc]->item.second = p.second;
-  }
-
-
+    // resize if loading factor is greater than alpha
+    if ((numItems_ + numDeleted_) / static_cast<double>(size_) >= resizeAlpha_) {
+        this->resize();
+    }
+    HASH_INDEX_T loc = this->probe(p.first);
+    if(loc == npos) {
+        throw std::logic_error("No location available to insert item");
+    }
+    if (table_[loc] == nullptr) {
+        table_[loc] = new HashItem(p);
+        numItems_++;
+    } else {
+        table_[loc]->item.second = p.second;
+    }
 }
 
 // To be completed
 template<typename K, typename V, typename Prober, typename Hash, typename KEqual>
 void HashTable<K,V,Prober,Hash,KEqual>::remove(const KeyType& key)
 {
-  HashItem* item = this->internalFind(key);
-  if(item == nullptr){
-    return;
-  }
-  item->deleted = true;
-  numDeleted_++;
-  numItems_--;
-
-
+    HashItem* item = this->internalFind(key);
+    if(item == nullptr) {
+        return;
+    }
+    item->deleted = true;
+    numDeleted_++;
+    numItems_--;
 }
 
 
@@ -438,25 +430,25 @@ typename HashTable<K,V,Prober,Hash,KEqual>::HashItem* HashTable<K,V,Prober,Hash,
 template<typename K, typename V, typename Prober, typename Hash, typename KEqual>
 void HashTable<K,V,Prober,Hash,KEqual>::resize()
 {
-  mIndex_++;
-  size_t newSize = CAPACITIES[mIndex_];
-  std::vector<HashItem*> oldTable = table_;
-  size_t oldSize = size_;
-  std::vector<HashItem*> newTable(newSize, nullptr);
-  
-  table_ = newTable;
-  size_ = newSize;
-  numItems_ = 0;
-  numDeleted_ = 0;
-
-  for(HASH_INDEX_T i=0; i<oldSize; i++){
-    if(oldTable[i] != nullptr){
-      if(!oldTable[i]->deleted){
-        this->insert(oldTable[i]->item);
-      }
-      delete oldTable[i];
+    mIndex_++;
+    size_t newSize = CAPACITIES[mIndex_];
+    std::vector<HashItem*> oldTable = table_;
+    size_t oldSize = size_;
+    std::vector<HashItem*> newTable(newSize, nullptr);
+    
+    table_ = newTable;
+    size_ = newSize;
+    numItems_ = 0;
+    numDeleted_ = 0;
+    
+    for(HASH_INDEX_T i = 0; i < oldSize; i++) {
+        if(oldTable[i] != nullptr) {
+            if (!oldTable[i]->deleted) {
+                this->insert(oldTable[i]->item);
+            }
+            delete oldTable[i];
+        }
     }
-  }    
 }
 
 // Almost complete
@@ -470,12 +462,12 @@ HASH_INDEX_T HashTable<K,V,Prober,Hash,KEqual>::probe(const KeyType& key) const
     totalProbes_++;
     while(Prober::npos != loc)
     {
-        if(nullptr == table_[loc] ) {
+        if(nullptr == table_[loc]) {
             return loc;
         }
         // fill in the condition for this else if statement which should 
         // return 'loc' if the given key exists at this location
-        else if(!table_[loc]->deleted && kequal_(key,table_[loc]->item.first)) {
+        else if(!table_[loc]->deleted && kequal_(key, table_[loc]->item.first)) {
             return loc;
         }
         loc = prober_.next();
@@ -489,13 +481,13 @@ HASH_INDEX_T HashTable<K,V,Prober,Hash,KEqual>::probe(const KeyType& key) const
 template<typename K, typename V, typename Prober, typename Hash, typename KEqual>
 void HashTable<K, V, Prober, Hash, KEqual>::reportAll(std::ostream& out) const
 {
-	for(HASH_INDEX_T i = 0; i < CAPACITIES[mIndex_]; ++i)
-	{
-		if(table_[i] != nullptr)
-		{
-			out << "Bucket " << i << ": " << table_[i]->item.first << " " << table_[i]->item.second << std::endl;
-		}
-	}
+    for(HASH_INDEX_T i = 0; i < CAPACITIES[mIndex_]; ++i)
+    {
+        if(table_[i] != nullptr)
+        {
+            out << "Bucket " << i << ": " << table_[i]->item.first << " " << table_[i]->item.second << std::endl;
+        }
+    }
 }
 
 #endif
