@@ -27,7 +27,7 @@ struct Prober {
     }
 };
 
-in the if statement below.
+//almost complete - fill in the if statement below.
 template <typename KeyType>
 struct LinearProber : public Prober<KeyType> {
 
