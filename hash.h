@@ -1,5 +1,5 @@
 #ifndef HASH_H
-#define HASH_H
+ne HASH_H
 
 #include <iostream>
 #include <cmath>
@@ -54,7 +54,7 @@ struct MyStringHash {
         return hash;
     }
 
-    // A likely helper function is to convert a-z,0-9 to an integral value 0-35
+kely helper function is to convert a-z,0-9 to an integral value 0-35
     HASH_INDEX_T letterDigitToNumber(char letter) const
     {
         // Add code here or delete this helper function if you do not want it
